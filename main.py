@@ -42,10 +42,39 @@ from typing import List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from dependency_bootstrap import DependencyInstallationError, ensure_dependencies
 
+APP_TITLE = "Thermal Delamination Detector"
+
+
+def _present_dependency_error(message: str) -> None:
+    """Display installation failures in both the console and a message box."""
+
+    print(message, file=sys.stderr)
+
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+    except Exception:
+        return
+
+    root = None
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(APP_TITLE, message)
+    except Exception:
+        pass
+    finally:
+        if root is not None:
+            try:
+                root.destroy()
+            except Exception:
+                pass
+
+
 try:
     ensure_dependencies()
 except DependencyInstallationError as exc:
-    print(exc, file=sys.stderr)
+    _present_dependency_error(str(exc))
     raise SystemExit(1) from exc
 
 MISSING_DEPENDENCIES: List[str] = []
@@ -191,7 +220,6 @@ except Exception:
         "pip install scikit-image",
     )
 
-APP_TITLE = "Thermal Delamination Detector"
 SUPPORTED_EXTENSIONS = {".rjpg", ".jpg", ".jpeg"}
 DEFAULT_OUTPUT_DIRNAME = "optimized"
 

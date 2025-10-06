@@ -49,10 +49,12 @@ class DependencyInstallationError(RuntimeError):
     """Raised when automatic installation fails for any dependency."""
 
     def __init__(self, messages: Iterable[str]) -> None:
-        joined = "\n".join(messages)
+        self.messages: List[str] = list(messages)
+        joined = "\n\n".join(self.messages)
         super().__init__(
             "One or more Python packages could not be installed automatically.\n"
-            f"Resolve the following issues manually and re-run the program:\n{joined}"
+            "Resolve the following issues manually and re-run the program:\n"
+            f"{joined}"
         )
 
 
@@ -90,13 +92,20 @@ def ensure_dependencies() -> None:
         try:
             _install_dependency(dep)
         except DependencyInstallationError as exc:  # pragma: no cover - interactive usage
+            messages = exc.messages if hasattr(exc, "messages") else [str(exc)]
             if dep.required:
-                failures.append(str(exc))
+                failures.extend(messages)
             else:
-                optional_failures.append(str(exc))
+                optional_failures.extend(messages)
 
     if failures:
         raise DependencyInstallationError(failures)
 
     if optional_failures:
-        print("\n".join(optional_failures), file=sys.stderr)
+        optional_details = "\n\n".join(optional_failures)
+        print(
+            "Some optional Python packages could not be installed automatically.\n"
+            "Optional features may be unavailable until they are installed manually.\n"
+            f"{optional_details}",
+            file=sys.stderr,
+        )
