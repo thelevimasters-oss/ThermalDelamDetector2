@@ -40,6 +40,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, TYPE_CHECKING
 
+from dependency_bootstrap import DependencyInstallationError, ensure_dependencies
+
+try:
+    ensure_dependencies()
+except DependencyInstallationError as exc:
+    print(exc, file=sys.stderr)
+    raise SystemExit(1) from exc
+
 MISSING_DEPENDENCIES: List[str] = []
 
 

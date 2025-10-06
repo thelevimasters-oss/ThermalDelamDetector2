@@ -17,35 +17,19 @@ infrastructure owners.
 
 ## Installation
 
+Double-clicking ``main.py`` now bootstraps all required Python packages automatically using ``python -m pip``. A reliable internet connection is recommended the first time you run the program so that dependencies can be downloaded.
+
+Managed environments can still install dependencies explicitly:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt  # optional convenience, see list below
+pip install customtkinter tkinterdnd2 flirimageextractor thermal-parser numpy scikit-image opencv-python piexif Pillow CTkToolTip
 ```
-
-Required Python packages (install via ``pip install <name>``):
-
-- ``customtkinter``
-- ``tkinterdnd2``
-- ``flirimageextractor``
-- ``thermal-parser``
-- ``numpy``
-- ``scikit-image``
-- ``opencv-python-headless``
-- ``piexif``
-- ``Pillow`` (installed automatically with CustomTkinter but listed for clarity)
-- ``CTkToolTip``
 
 > **Note:** ``flirimageextractor`` depends on [ExifTool](https://exiftool.org/).
 > Ensure ``exiftool`` is installed on your system and available on the ``PATH``
 > when processing FLIR or Skydio RJPG files.
-
-If you prefer not to maintain a requirements file, install the packages
-manually:
-
-```bash
-pip install customtkinter tkinterdnd2 flirimageextractor thermal-parser numpy scikit-image opencv-python-headless piexif Pillow CTkToolTip
-```
 
 ## Usage
 
