@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
-from PIL import Image, ImageQt
+from PIL import Image
 
 from processing import ProcessingParams, process_image, SUPPORTED_EXTS
 from io_utils import (
@@ -86,8 +86,9 @@ class ImageView(QtWidgets.QGraphicsView):
         pix = QtGui.QPixmap.fromImage(qimage)
         self.scene().clear()
         self._pix = self.scene().addPixmap(pix)
-        # PyQt6 expects a QRectF for setSceneRect; wrap the pixmap rect accordingly.
-        self.setSceneRect(QtCore.QRectF(pix.rect()))
+        # QGraphicsPixmapItem.boundingRect() already returns a QRectF, so use it directly
+        # instead of wrapping the integer QRect from QPixmap.rect().
+        self.setSceneRect(self._pix.boundingRect())
         self.fitInView(self.sceneRect(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def resizeEvent(self, e):
@@ -399,8 +400,11 @@ class SingleTab(QtWidgets.QWidget):
             self.current_img = img
             self.current_path = p
             # Show original
-            qimg = ImageQt.ImageQt(img.convert("RGB"))
-            self.viewOriginal.set_image(qimg)
+            # ImageQt.ImageQt keeps a pointer to the temporary PIL image which can
+            # lead to crashes once the temporary object is garbage collected.
+            # Convert to a NumPy array and build a detached QImage instead.
+            rgb_arr = np.array(img.convert("RGB"))
+            self.viewOriginal.set_image(_qimage_from_array(rgb_arr))
             self.statusBar.showMessage(f"Loaded {p.name} ({img.width}x{img.height})")
             self.on_process(live=True)
         except Exception as ex:
@@ -415,8 +419,8 @@ class SingleTab(QtWidgets.QWidget):
         mask8 = np.where(outputs.hotspot_mask, 255, 0).astype(np.uint8)
         self.viewMask.set_image(_qimage_from_array(mask8))
         # Overlay
-        qimg = ImageQt.ImageQt(outputs.overlay_rgb)
-        self.viewOverlay.set_image(qimg)
+        overlay_arr = np.array(outputs.overlay_rgb)
+        self.viewOverlay.set_image(_qimage_from_array(overlay_arr))
 
     def on_process(self, live=False):
         if self.current_img is None:
