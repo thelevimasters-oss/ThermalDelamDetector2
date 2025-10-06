@@ -88,6 +88,22 @@ try:
 except Exception as exc:  # pragma: no cover - fallback for unusual Tk builds
     raise ImportError("Tkinter is required for this application") from exc
 
+
+def _show_startup_error(message: str) -> None:
+    """Best effort UI notification when startup fails."""
+
+    try:
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(APP_TITLE, message)
+        root.destroy()
+    except Exception:
+        # If Tk cannot be initialised (e.g. headless environment) we silently
+        # ignore the failure because the caller also prints to stderr.
+        pass
+
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
 except Exception:
@@ -712,12 +728,17 @@ else:
 def run() -> None:
     if MISSING_DEPENDENCIES:
         message = _format_missing_dependency_message()
-        print(message, file=sys.stderr)
+        if message:
+            _show_startup_error(message)
+            print(message, file=sys.stderr)
         raise SystemExit(1)
     if ThermalDelamApp is None:
-        raise SystemExit(
+        message = (
             "Required GUI dependencies are unavailable even though dependency checks passed."
         )
+        _show_startup_error(message)
+        print(message, file=sys.stderr)
+        raise SystemExit(1)
     app = ThermalDelamApp()
     app.mainloop()
 
