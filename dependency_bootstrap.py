@@ -38,6 +38,12 @@ REQUIRED_DEPENDENCIES: List[Dependency] = [
     Dependency("cv2", "opencv-python"),
     Dependency("piexif", "piexif"),
     Dependency("skimage", "scikit-image"),
+    Dependency("flirimageextractor", "flirimageextractor", required=False),
+    Dependency(
+        "thermal_parser",
+        "dji-thermal-sdk @ git+https://github.com/dji-sdk/DJI-thermal-sdk.git",
+        required=False,
+    ),
     # Optional quality-of-life extras. Installing them automatically keeps the
     # GUI consistent for first-time users but the application can run without
     # them if installation fails.
