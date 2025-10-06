@@ -1,6 +1,6 @@
-# __init__.py
-"""
-Thermal Delamination Detector package initializer.
-"""
-__all__ = ["processing", "io_utils", "gui"]
-__version__ = "1.0.0"
+"""Thermal Delamination Detector package."""
+
+from .main import ProcessingConfig, ThermalDelamApp, run
+
+__all__ = ["ProcessingConfig", "ThermalDelamApp", "run"]
+__version__ = "2.0.0"
