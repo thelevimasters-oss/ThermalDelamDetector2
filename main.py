@@ -218,6 +218,7 @@ except Exception:
         MISSING_DEPENDENCIES,
         "scikit-image",
         "pip install scikit-image",
+        optional=True,
     )
 
 SUPPORTED_EXTENSIONS = {".rjpg", ".jpg", ".jpeg"}
@@ -348,6 +349,28 @@ def normalise_temperature(arr: np.ndarray) -> Tuple[np.ndarray, float, float]:
     return norm, t_min, t_max
 
 
+def _apply_morphology(mask: np.ndarray, kernel_size: int) -> np.ndarray:
+    """Apply morphological opening/closing, falling back if scikit-image is absent."""
+
+    if kernel_size <= 1:
+        return mask.astype(bool)
+
+    if closing is not None and opening is not None and square is not None:
+        kernel = square(kernel_size)
+        processed = opening(mask, kernel)
+        processed = closing(processed, kernel)
+        return processed.astype(bool)
+
+    if cv2 is not None:
+        kernel = np.ones((kernel_size, kernel_size), dtype=np.uint8)
+        mask_uint8 = mask.astype(np.uint8)
+        opened = cv2.morphologyEx(mask_uint8, cv2.MORPH_OPEN, kernel)
+        closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel)
+        return closed.astype(bool)
+
+    return mask.astype(bool)
+
+
 def detect_hotspots(
     temperature: np.ndarray, multiplier: float, kernel_size: int
 ) -> Tuple[np.ndarray, float]:
@@ -361,11 +384,8 @@ def detect_hotspots(
     threshold = mean + multiplier * std
     mask = np.greater(temperature, threshold, where=np.isfinite(temperature))
 
-    if kernel_size > 1:
-        kernel = square(kernel_size)
-        mask = opening(mask, kernel)
-        mask = closing(mask, kernel)
-    return mask.astype(bool), threshold
+    processed = _apply_morphology(mask, kernel_size)
+    return processed.astype(bool), threshold
 
 
 def render_overlay(
@@ -448,7 +468,6 @@ if (
     and np is not None
     and cv2 is not None
     and piexif is not None
-    and closing is not None
 ):
 
     class ThermalDelamApp(ctk.CTk):
