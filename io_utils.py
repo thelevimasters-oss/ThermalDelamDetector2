@@ -110,13 +110,24 @@ def make_output_paths(
     suffix: str,
 ) -> Path:
     """
-    Build output path with suffix before extension in the chosen output_dir.
+    Build output path with *suffix* appended to the stem.
+
+    If *suffix* already contains a file extension (e.g. ``"_overlay.jpg"`` or
+    ``".json"``) it will be used as-is. Otherwise the source image extension is
+    preserved.
     """
     in_p = Path(input_path)
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = in_p.stem
-    return out_dir / f"{stem}{suffix}{in_p.suffix if suffix.lower().endswith('.pdf') is False else ''}"
+
+    suffix_str = str(suffix)
+    suffix_ext = Path(suffix_str).suffix
+    if suffix_ext:
+        filename = f"{in_p.stem}{suffix_str}"
+    else:
+        filename = f"{in_p.stem}{suffix_str}{in_p.suffix}"
+
+    return out_dir / filename
 
 
 def write_pdf_report(
