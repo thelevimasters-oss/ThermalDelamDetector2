@@ -237,9 +237,11 @@ class SingleTab(QtWidgets.QWidget):
         self.opacitySlider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.opacitySlider.setRange(0, 100)
         self.opacitySlider.setValue(int(self.params.overlay_opacity * 100))
-        self.opacitySpin = QtWidgets.QSpinBox()
-        self.opacitySpin.setRange(0, 100)
-        self.opacitySpin.setValue(int(self.params.overlay_opacity * 100))
+        self.opacitySpin = QtWidgets.QDoubleSpinBox()
+        self.opacitySpin.setRange(0.0, 1.0)
+        self.opacitySpin.setSingleStep(0.01)
+        self.opacitySpin.setDecimals(2)
+        self.opacitySpin.setValue(self.params.overlay_opacity)
         self._bind_slider_spin(self.opacitySlider, self.opacitySpin, "overlay_opacity", scale=0.01, tip="Overlay opacity for colorized map/hotspots.")
 
         self.blurSpin = QtWidgets.QDoubleSpinBox()
@@ -348,14 +350,17 @@ class SingleTab(QtWidgets.QWidget):
             spin.setToolTip(tip)
 
         def on_slider(v):
+            value = v * scale
             spin.blockSignals(True)
-            spin.setValue(v * scale)
+            spin.setValue(value)
             spin.blockSignals(False)
-            self._update_param(field, v * scale)
+            self._update_param(field, value)
 
         def on_spin(v):
+            slider_value = int(round(v / scale)) if scale else int(v)
+            slider_value = max(slider.minimum(), min(slider.maximum(), slider_value))
             slider.blockSignals(True)
-            slider.setValue(int(v / scale))
+            slider.setValue(slider_value)
             slider.blockSignals(False)
             self._update_param(field, v)
 
@@ -513,7 +518,7 @@ class SingleTab(QtWidgets.QWidget):
         self.closeSpin.setValue(p.closing_iterations)
         self.kernelSpin.setValue(p.kernel_size)
         self.opacitySlider.setValue(int(p.overlay_opacity * 100))
-        self.opacitySpin.setValue(int(p.overlay_opacity * 100))
+        self.opacitySpin.setValue(p.overlay_opacity)
         self.blurSpin.setValue(p.gaussian_sigma)
         self.mapCombo.setCurrentText(p.colormap)
         self.gpuCheck.setChecked(p.use_gpu)
