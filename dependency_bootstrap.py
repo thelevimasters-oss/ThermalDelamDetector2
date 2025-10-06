@@ -34,7 +34,7 @@ REQUIRED_DEPENDENCIES: List[Dependency] = [
     Dependency("numpy", "numpy"),
     Dependency("PIL", "Pillow"),
     Dependency("customtkinter", "customtkinter"),
-    Dependency("tkinterdnd2", "tkinterdnd2"),
+    Dependency("tkinterdnd2", "tkinterdnd2", required=False),
     Dependency("cv2", "opencv-python"),
     Dependency("piexif", "piexif"),
     Dependency("skimage", "scikit-image"),

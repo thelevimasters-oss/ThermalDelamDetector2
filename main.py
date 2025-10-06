@@ -49,12 +49,19 @@ except DependencyInstallationError as exc:
     raise SystemExit(1) from exc
 
 MISSING_DEPENDENCIES: List[str] = []
+OPTIONAL_DEPENDENCY_WARNINGS: List[str] = []
 
 
-def _register_missing_dependency(messages: List[str], package: str, hint: str) -> None:
+def _register_missing_dependency(
+    messages: List[str], package: str, hint: str, *, optional: bool = False
+) -> None:
     """Collect a user friendly dependency warning."""
 
-    messages.append(f"• {package} (install with `{hint}`)")
+    entry = f"• {package} (install with `{hint}`)"
+    if optional:
+        OPTIONAL_DEPENDENCY_WARNINGS.append(entry)
+    else:
+        messages.append(entry)
 
 
 try:
@@ -91,6 +98,17 @@ def _format_missing_dependency_message() -> str:
         f"{joined}"
     )
 
+
+def _format_optional_dependency_message() -> str:
+    if not OPTIONAL_DEPENDENCY_WARNINGS:
+        return ""
+    joined = "\n".join(OPTIONAL_DEPENDENCY_WARNINGS)
+    return (
+        "Some optional features are unavailable.\n"
+        "The application will start with reduced functionality.\n"
+        f"{joined}"
+    )
+
 try:
     from tkinter import filedialog, messagebox  # type: ignore
 except Exception as exc:  # pragma: no cover - fallback for unusual Tk builds
@@ -121,6 +139,7 @@ except Exception:
         MISSING_DEPENDENCIES,
         "tkinterdnd2",
         "pip install tkinterdnd2",
+        optional=True,
     )
 
 try:
@@ -396,7 +415,6 @@ def list_candidate_files(path: Path) -> List[Path]:
 
 if (
     ctk is not None
-    and TkinterDnD is not None
     and Image is not None
     and ImageTk is not None
     and np is not None
@@ -405,19 +423,20 @@ if (
     and closing is not None
 ):
 
-    class ThermalDelamApp(TkinterDnD.TkinterDnD, ctk.CTk):
+    class ThermalDelamApp(ctk.CTk):
         """CustomTkinter GUI application for radiometric thermal processing."""
-    
+
         def __init__(self) -> None:
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("dark-blue")
-            TkinterDnD.TkinterDnD.__init__(self)
-            ctk.CTk.__init__(self)
-    
+            super().__init__()
+
+            self.drag_and_drop_enabled = TkinterDnD is not None
+
             self.title(APP_TITLE)
             self.geometry("1100x720")
             self.minsize(1000, 680)
-    
+
             self.config = ProcessingConfig()
             self.current_path: Optional[Path] = None
             self.preview_photo_original: Optional[ImageTk.PhotoImage] = None
@@ -425,6 +444,7 @@ if (
             self.preview_pending = False
     
             self._build_ui()
+            self._show_optional_dependency_warnings()
     
         # ------------------------------------------------------------------ UI
         def _build_ui(self) -> None:
@@ -435,11 +455,28 @@ if (
             input_frame = ctk.CTkFrame(root)
             input_frame.pack(fill=ctk.X, padx=10, pady=(10, 5))
     
-            self.input_entry = ctk.CTkEntry(input_frame, placeholder_text="Drag & drop a file or folder here")
+            placeholder = (
+                "Drag & drop a file or folder here"
+                if self.drag_and_drop_enabled
+                else "Select a file or folder"
+            )
+            self.input_entry = ctk.CTkEntry(input_frame, placeholder_text=placeholder)
             self.input_entry.pack(side=ctk.LEFT, fill=ctk.X, expand=True, padx=(10, 6), pady=10)
-            self.input_entry.drop_target_register(DND_FILES)
-            self.input_entry.dnd_bind("<Drop>", self._on_drop)
-            CTkToolTip(self.input_entry, message="Input RJPG file or folder containing radiometric JPEGs")
+            dnd_active = self.drag_and_drop_enabled and hasattr(
+                self.input_entry, "drop_target_register"
+            )
+            if dnd_active:
+                self.input_entry.drop_target_register(DND_FILES)
+                self.input_entry.dnd_bind("<Drop>", self._on_drop)
+                tooltip = "Input RJPG file or folder containing radiometric JPEGs"
+            else:
+                if self.drag_and_drop_enabled and not dnd_active:
+                    self.input_entry.configure(placeholder_text="Select a file or folder")
+                self.drag_and_drop_enabled = False
+                tooltip = (
+                    "Input RJPG file or folder containing radiometric JPEGs (use the Browse button)"
+                )
+            CTkToolTip(self.input_entry, message=tooltip)
     
             browse_btn = ctk.CTkButton(input_frame, text="Browse…", command=self._select_input)
             browse_btn.pack(side=ctk.LEFT, padx=(0, 10), pady=10)
@@ -544,15 +581,25 @@ if (
             preview_label_processed.grid(row=0, column=1, padx=10, pady=(10, 4))
             CTkToolTip(preview_label_processed, message="Jet render with red highlight overlay")
     
-            self.original_canvas = ctk.CTkLabel(preview_frame, text="Drop RJPG to preview", anchor="center")
+            original_text = "Drop RJPG to preview" if self.drag_and_drop_enabled else "Select RJPG to preview"
+            self.original_canvas = ctk.CTkLabel(preview_frame, text=original_text, anchor="center")
             self.original_canvas.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
             self.original_canvas.configure(compound="center")
-            CTkToolTip(self.original_canvas, message="Preview of the dropped radiometric JPEG")
-    
-            self.processed_canvas = ctk.CTkLabel(preview_frame, text="Processed overlay preview", anchor="center")
+            original_tip = (
+                "Preview of the dropped radiometric JPEG"
+                if self.drag_and_drop_enabled
+                else "Preview of the selected radiometric JPEG"
+            )
+            CTkToolTip(self.original_canvas, message=original_tip)
+
+            processed_text = "Processed overlay preview" if self.drag_and_drop_enabled else "Overlay preview"
+            self.processed_canvas = ctk.CTkLabel(preview_frame, text=processed_text, anchor="center")
             self.processed_canvas.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
             self.processed_canvas.configure(compound="center")
-            CTkToolTip(self.processed_canvas, message="Thermal overlay result with hotspots highlighted")
+            CTkToolTip(
+                self.processed_canvas,
+                message="Thermal overlay result with hotspots highlighted",
+            )
     
             # Status/logging -------------------------------------------------
             log_frame = ctk.CTkFrame(root)
@@ -570,6 +617,8 @@ if (
     
         # ------------------------------------------------------------------ Helpers
         def _on_drop(self, event) -> None:
+            if not self.drag_and_drop_enabled:
+                return
             data = event.data
             paths = self.tk.splitlist(data)
             if not paths:
@@ -726,6 +775,17 @@ if (
             )
             self.log_text.insert(ctk.END, notes)
             self.log_text.configure(state=ctk.NORMAL)
+
+        def _show_optional_dependency_warnings(self) -> None:
+            if not OPTIONAL_DEPENDENCY_WARNINGS:
+                return
+            joined = "\n".join(OPTIONAL_DEPENDENCY_WARNINGS)
+            self.log("Optional components missing:\n" + joined)
+            try:
+                messagebox.showwarning(APP_TITLE, _format_optional_dependency_message())
+            except Exception:
+                pass
+            OPTIONAL_DEPENDENCY_WARNINGS.clear()
     
     
 
