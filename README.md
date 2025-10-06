@@ -17,7 +17,7 @@ infrastructure owners.
 
 ## Installation
 
-Double-clicking ``main.py`` now bootstraps all required Python packages automatically using ``python -m pip``. A reliable internet connection is recommended the first time you run the program so that dependencies can be downloaded.
+Double-clicking ``main.py`` now bootstraps all required Python packages automatically using ``python -m pip``. This includes optional helpers such as ``flirimageextractor`` and the DJI Thermal SDK bindings (installed from GitHub). A reliable internet connection is recommended the first time you run the program so that dependencies can be downloaded.
 
 Managed environments can still install dependencies explicitly:
 
