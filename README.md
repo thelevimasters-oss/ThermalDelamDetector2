@@ -9,7 +9,7 @@ infrastructure owners.
 ## Key features
 
 - Drag-and-drop or browse radiometric JPEGs from DJI, FLIR, or Skydio drones.
-- Automatic temperature extraction (``thermal_parser`` for DJI, ``flirimageextractor`` for FLIR/Skydio).
+- Automatic temperature extraction (DJI Thermal SDK for DJI, ``flirimageextractor`` for FLIR/Skydio).
 - Adjustable statistical threshold (``mean + k × σ``) and morphology kernel for hotspot cleaning.
 - Dual preview panes showing the original RJPG and the Jet-colormap overlay with red highlighted hotspots.
 - Batch processing with progress feedback and EXIF preservation so exports remain geotagged for orthomosaic/GIS workflows.
@@ -24,7 +24,14 @@ Managed environments can still install dependencies explicitly:
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install customtkinter tkinterdnd2 flirimageextractor thermal-parser numpy scikit-image opencv-python piexif Pillow CTkToolTip
+pip install customtkinter tkinterdnd2 flirimageextractor numpy scikit-image opencv-python piexif Pillow CTkToolTip
+```
+
+To enable DJI radiometric parsing, install the official DJI Thermal SDK Python
+bindings (requires ``git``):
+
+```bash
+pip install "dji-thermal-sdk @ git+https://github.com/dji-sdk/DJI-thermal-sdk.git"
 ```
 
 > **Note:** ``flirimageextractor`` depends on [ExifTool](https://exiftool.org/).

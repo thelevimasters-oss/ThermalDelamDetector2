@@ -10,7 +10,7 @@ drop via ``tkinterdnd2``.
 
 Supported inputs
 ----------------
-* DJI aircraft that embed radiometric data (via ``thermal_parser``)
+* DJI aircraft that embed radiometric data (via the DJI Thermal SDK Python bindings)
 * FLIR / Skydio RJPGs (via ``flirimageextractor`` – requires ExifTool in PATH)
 
 Processing steps
@@ -226,7 +226,7 @@ DEFAULT_OUTPUT_DIRNAME = "optimized"
 
 DRONE_TYPES = (
     "Auto detect",
-    "DJI (thermal_parser)",
+    "DJI (DJI Thermal SDK)",
     "FLIR/Skydio (flirimageextractor)",
 )
 
@@ -254,7 +254,8 @@ class ThermalProcessingResult:
 def _load_radiometric_from_dji(path: Path) -> np.ndarray:
     if ThermalParser is None:
         raise RuntimeError(
-            "thermal_parser is not installed. Install it to process DJI RJPG files."
+            "DJI Thermal SDK is not installed. Install it to process DJI RJPG files"
+            " (see the README for setup instructions)."
         )
     parser = ThermalParser(str(path))
     candidates = [
@@ -269,8 +270,8 @@ def _load_radiometric_from_dji(path: Path) -> np.ndarray:
     ]
     if not candidates:
         raise RuntimeError(
-            "thermal_parser.ThermalParser does not expose a known method to "
-            "retrieve temperature data. Update the library or check its API."
+            "The DJI Thermal SDK bindings do not expose a known method to retrieve "
+            "temperature data. Update the library or check its API."
         )
     last_exc: Optional[Exception] = None
     for attr in candidates:
@@ -279,13 +280,16 @@ def _load_radiometric_from_dji(path: Path) -> np.ndarray:
             data = func()
             arr = np.asarray(data, dtype=float)
             if arr.size == 0:
-                raise ValueError("Empty thermal array returned from thermal_parser")
+                raise ValueError(
+                    "Empty thermal array returned from the DJI Thermal SDK parser"
+                )
             return arr
         except Exception as exc:  # pragma: no cover - depends on external lib
             last_exc = exc
     if last_exc is not None:
         raise RuntimeError(
-            f"Failed to decode DJI radiometric data using thermal_parser: {last_exc}"
+            "Failed to decode DJI radiometric data using the DJI Thermal SDK: "
+            f"{last_exc}"
         ) from last_exc
     raise RuntimeError("Unknown error retrieving DJI radiometric data")
 
