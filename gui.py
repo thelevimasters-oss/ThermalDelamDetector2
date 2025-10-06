@@ -48,14 +48,15 @@ def _qimage_from_array(arr: np.ndarray) -> QtGui.QImage:
     """
     if arr.ndim == 2:
         h, w = arr.shape
-        buf = (np.clip(arr, 0, 255)).astype(np.uint8).copy()
-        qimg = QtGui.QImage(buf.data, w, h, w, QtGui.QImage.Format.Format_Grayscale8)
+        buf = np.clip(arr, 0, 255).astype(np.uint8, copy=True)
+        # QImage does not take ownership of the NumPy buffer, so we copy to detach
+        qimg = QtGui.QImage(buf.data, w, h, w, QtGui.QImage.Format.Format_Grayscale8).copy()
         qimg.setDevicePixelRatio(1)
         return qimg
     elif arr.ndim == 3 and arr.shape[2] == 3:
         h, w, _ = arr.shape
-        buf = arr.astype(np.uint8).copy()
-        qimg = QtGui.QImage(buf.data, w, h, 3 * w, QtGui.QImage.Format.Format_RGB888)
+        buf = np.clip(arr, 0, 255).astype(np.uint8, copy=True)
+        qimg = QtGui.QImage(buf.data, w, h, 3 * w, QtGui.QImage.Format.Format_RGB888).copy()
         qimg.setDevicePixelRatio(1)
         return qimg
     else:
