@@ -85,7 +85,8 @@ class ImageView(QtWidgets.QGraphicsView):
         pix = QtGui.QPixmap.fromImage(qimage)
         self.scene().clear()
         self._pix = self.scene().addPixmap(pix)
-        self.setSceneRect(pix.rect())
+        # PyQt6 expects a QRectF for setSceneRect; wrap the pixmap rect accordingly.
+        self.setSceneRect(QtCore.QRectF(pix.rect()))
         self.fitInView(self.sceneRect(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def resizeEvent(self, e):
